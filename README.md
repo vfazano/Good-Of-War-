@@ -121,7 +121,7 @@ run.bat
 ```bash
 # Compilar todos os arquivos Java
 mkdir bin
-javac -encoding UTF-8 -d bin src/com/sparta/game/**/*.java src/com/sparta/game/Main.java
+javac -encoding UTF-8 -d bin src\com\sparta\game\combat\*.java src\com\sparta\game\core\*.java src\com\sparta\game\effects\*.java src\com\sparta\game\entities\*.java src\com\sparta\game\oop\*.java src\com\sparta\game\ui\*.java src\com\sparta\game\world\*.java src\com\sparta\game\Main.java
 
 # Executar o jogo
 java -cp bin com.sparta.game.Main
