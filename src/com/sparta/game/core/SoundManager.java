@@ -4,6 +4,10 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineUnavailableException;
+import javazoom.jl.decoder.JavaLayerException;
+import javazoom.jl.player.Player;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -18,7 +22,11 @@ public class SoundManager {
 
     private static final float SAMPLE_RATE = 22050f;
     private final ExecutorService soundPool;
-    private boolean soundEnabled = true;
+    private volatile boolean soundEnabled = true;
+    private boolean musicRequested;
+    private String currentMusicPath;
+    private Player musicPlayer;
+    private Thread musicThread;
 
     public SoundManager() {
         // Pool de threads desacoplado para não atrasar o GameLoop
@@ -26,6 +34,78 @@ public class SoundManager {
             Thread t = new Thread(r, "SpartaAudioThread");
             t.setDaemon(true);
             return t;
+        });
+    }
+
+    public void playMusic(String trackPath) {
+        if (trackPath == null || trackPath.trim().isEmpty()) return;
+        synchronized (this) {
+            if (!soundEnabled || (musicRequested && trackPath.equals(currentMusicPath))) return;
+        }
+        stopMusic();
+        synchronized (this) {
+            if (!soundEnabled) return;
+            musicRequested = true;
+            currentMusicPath = trackPath;
+            musicThread = new Thread(() -> playMusicLoop(trackPath), "GoodOfWarMusic");
+            musicThread.setDaemon(true);
+            musicThread.start();
+        }
+    }
+
+    public void stopMusic() {
+        Player player;
+        Thread thread;
+        synchronized (this) {
+            musicRequested = false;
+            currentMusicPath = null;
+            player = musicPlayer;
+            musicPlayer = null;
+            thread = musicThread;
+            musicThread = null;
+        }
+        if (player != null) player.close();
+        if (thread != null) thread.interrupt();
+    }
+
+    private void playMusicLoop(String trackPath) {
+        while (isMusicRequested(trackPath)) {
+            Player player = null;
+            try (FileInputStream stream = new FileInputStream(trackPath)) {
+                player = new Player(stream);
+                synchronized (this) {
+                    if (!isMusicRequested(trackPath)) {
+                        player.close();
+                        return;
+                    }
+                    musicPlayer = player;
+                }
+                player.play();
+            } catch (IOException | JavaLayerException ignored) {
+                return;
+            } finally {
+                synchronized (this) {
+                    if (musicPlayer == player) musicPlayer = null;
+                }
+                if (player != null) player.close();
+            }
+        }
+    }
+
+    private synchronized boolean isMusicRequested(String trackPath) {
+        return soundEnabled && musicRequested && trackPath.equals(currentMusicPath);
+    }
+
+    public void playSwordHitSound() {
+        if (!soundEnabled) return;
+        soundPool.execute(() -> {
+            try (FileInputStream stream = new FileInputStream("music/espada.mp3")) {
+                Player player = new Player(stream);
+                player.play();
+                player.close();
+            } catch (IOException | JavaLayerException ignored) {
+                // A falha ao carregar o efeito nao deve interromper o jogo.
+            }
         });
     }
 
@@ -173,6 +253,7 @@ public class SoundManager {
 
     public void setSoundEnabled(boolean soundEnabled) {
         this.soundEnabled = soundEnabled;
+        if (!soundEnabled) stopMusic();
     }
 
     public boolean isSoundEnabled() {

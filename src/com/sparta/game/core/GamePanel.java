@@ -2,6 +2,7 @@ package com.sparta.game.core;
 
 import com.sparta.game.combat.Hitbox;
 import com.sparta.game.effects.BloodParticle;
+import com.sparta.game.effects.FloatingText;
 import com.sparta.game.effects.Particle;
 import com.sparta.game.effects.SparkParticle;
 import com.sparta.game.entities.Enemy;
@@ -12,6 +13,7 @@ import com.sparta.game.entities.SpartanLegionnaire;
 import com.sparta.game.ui.HUD;
 import com.sparta.game.ui.MenuOverlay;
 import com.sparta.game.world.Level;
+import com.sparta.game.world.Chest;
 
 import javax.swing.JPanel;
 import java.awt.Color;
@@ -45,6 +47,8 @@ public class GamePanel extends JPanel {
     private Level level;
     private Player player;
     private SpartanBoss boss;
+    private int stageNumber;
+    private static final int FINAL_STAGE = 3;
 
     // Coleções polimórficas
     private final List<Enemy> enemies;
@@ -75,31 +79,72 @@ public class GamePanel extends JPanel {
     }
 
     public void resetGame() {
-        this.level = new Level(2400, 700);
         this.player = new Player(180, 440);
+        loadStage(1);
+    }
+
+    private void loadStage(int nextStage) {
+        this.stageNumber = nextStage;
+        int levelWidth = nextStage == 1 ? 1900 : nextStage == 2 ? 2200 : 2400;
+        this.level = new Level(levelWidth, 700, nextStage);
+        player.setPosition(100, 452);
+        player.setVelocity(0, 0);
         this.enemies.clear();
         this.hitboxes.clear();
         this.particles.clear();
+        this.boss = null;
 
-        // População de Inimigos ao longo do templo de Esparta
-        enemies.add(new SpartanLegionnaire(480, 440));
-        enemies.add(new SpartanLegionnaire(760, 260));
-        enemies.add(new SpartanBrute(1120, 430));
-        enemies.add(new SpartanLegionnaire(1450, 250));
-        enemies.add(new SpartanBrute(1680, 430));
-
-        // Chefe de Fase no final da arena
-        this.boss = new SpartanBoss(2050, 420);
-        enemies.add(boss);
+        if (nextStage == 1) {
+            enemies.add(new SpartanLegionnaire(480, 456));
+            enemies.add(new SpartanLegionnaire(870, 456));
+            enemies.add(new SpartanBrute(1360, 442));
+        } else if (nextStage == 2) {
+            enemies.add(new SpartanLegionnaire(420, 456));
+            enemies.add(new SpartanBrute(760, 442));
+            enemies.add(new SpartanLegionnaire(1180, 456));
+            enemies.add(new SpartanBrute(1640, 442));
+        } else {
+            enemies.add(new SpartanLegionnaire(470, 456));
+            enemies.add(new SpartanBrute(850, 442));
+            enemies.add(new SpartanLegionnaire(1270, 456));
+            boss = new SpartanBoss(2050, 424);
+            enemies.add(boss);
+        }
+        camera.reset();
     }
 
     public void update() {
         inputManager.update();
         menuOverlay.update();
+        String musicPath = state == GameState.MENU
+                ? "music/musicmenu.mp3"
+                : "music/musicagameplay.mp3";
+        soundManager.playMusic(musicPath);
 
         // 1. Controle de telas / Estados de Jogo
         if (state == GameState.MENU) {
             if (inputManager.restart || inputManager.jump || inputManager.lightAttack) {
+                state = GameState.PLAYING;
+            }
+            return;
+        }
+
+        if (state == GameState.LEVEL_UP) {
+            int choice = inputManager.upgradeHealth ? 1
+                    : inputManager.upgradeDamage ? 2
+                    : inputManager.upgradeRage ? 3 : 0;
+            if (choice != 0) {
+                player.applyLevelUpgrade(choice);
+                if (player.getPendingLevelUps() == 0) {
+                    resolveAfterLevelUp();
+                }
+            }
+            return;
+        }
+
+        if (state == GameState.STAGE_CLEAR) {
+            if (inputManager.restart && stageNumber < FINAL_STAGE) {
+                loadStage(stageNumber + 1);
                 state = GameState.PLAYING;
             }
             return;
@@ -128,6 +173,7 @@ public class GamePanel extends JPanel {
         // 3. Atualizar Level e Câmera com rastreio de Kratos
         level.update();
         player.update(context);
+        collectNearbyChest();
         camera.update(player.getX() + player.getWidth() / 2.0, player.getY(), SCREEN_WIDTH, level.getWidth());
 
         // 4. POLIMORFISMO: Atualizar lista de inimigos heterogêneos
@@ -161,9 +207,57 @@ public class GamePanel extends JPanel {
         // 8. Checagem de Condição de Derrota ou Vitória
         if (!player.isAlive()) {
             state = GameState.GAME_OVER;
-        } else if (boss != null && !boss.isAlive()) {
+        } else if (player.getPendingLevelUps() > 0) {
+            state = GameState.LEVEL_UP;
+        } else if (stageNumber == FINAL_STAGE && boss != null && !boss.isAlive()) {
             state = GameState.VICTORY;
+        } else if (allEnemiesDefeated()) {
+            state = GameState.STAGE_CLEAR;
         }
+    }
+
+    private void resolveAfterLevelUp() {
+        if (stageNumber == FINAL_STAGE && boss != null && !boss.isAlive()) {
+            state = GameState.VICTORY;
+        } else if (allEnemiesDefeated()) {
+            state = GameState.STAGE_CLEAR;
+        } else {
+            state = GameState.PLAYING;
+        }
+    }
+
+    private boolean allEnemiesDefeated() {
+        for (Enemy enemy : enemies) {
+            if (enemy.isAlive()) return false;
+        }
+        return true;
+    }
+
+    private void collectNearbyChest() {
+        if (!inputManager.interact) return;
+        for (Chest chest : level.getChests()) {
+            if (!chest.isNear((int) player.getX(), (int) player.getY(), player.getWidth(), player.getHeight())) continue;
+            Chest.Reward reward = chest.open();
+            if (reward == Chest.Reward.HEALTH) {
+                player.restoreHealth(45);
+                particles.add(new FloatingText(player.getX(), player.getY() - 20, "+45 VIDA", new Color(90, 230, 120), 24));
+            } else if (reward == Chest.Reward.RAGE) {
+                player.addRage(player.getMaxRage());
+                particles.add(new FloatingText(player.getX(), player.getY() - 20, "FURIA RESTAURADA", new Color(255, 150, 40), 24));
+            } else if (reward == Chest.Reward.BLADE_UPGRADE) {
+                player.upgradeBladesFromChest();
+                particles.add(new FloatingText(player.getX(), player.getY() - 20, "LAMINAS +2", new Color(255, 220, 90), 24));
+            }
+            soundManager.playHeavyImpactSound();
+            break;
+        }
+    }
+
+    private boolean isNearChest() {
+        for (Chest chest : level.getChests()) {
+            if (chest.isNear((int) player.getX(), (int) player.getY(), player.getWidth(), player.getHeight())) return true;
+        }
+        return false;
     }
 
     private void processCombatCollisions() {
@@ -174,7 +268,14 @@ public class GamePanel extends JPanel {
             if (h.getDamageInfo().isFromPlayer()) {
                 for (Enemy enemy : enemies) {
                     if (enemy.isAlive() && h.intersects(enemy.getHitbox())) {
+                        boolean wasAlive = enemy.isAlive();
                         enemy.takeDamage(h.getDamageInfo()); // Despacho Polimórfico!
+                        if (wasAlive && !enemy.isAlive()) {
+                            int xpReward = enemy.getExperienceReward();
+                            player.awardExperience(xpReward);
+                            particles.add(new FloatingText(enemy.getX(), enemy.getY() - 18,
+                                    "+" + xpReward + " XP", new Color(255, 215, 90), 22));
+                        }
                         player.getComboTracker().registerHit();
                         player.addRage(8);
 
@@ -185,7 +286,7 @@ public class GamePanel extends JPanel {
                                     (Math.random() - 0.5) * 5, -Math.random() * 4, 30, 4));
                         }
 
-                        soundManager.playHitSound();
+                        soundManager.playSwordHitSound();
                         h.deactivate(); // Desativa hitbox para não dar hit infinito no mesmo frame
                         break;
                     }
@@ -247,11 +348,17 @@ public class GamePanel extends JPanel {
         // Desfaz translação da câmera para desenhar a HUD estática na tela
         g2.translate(camX, camY);
 
+        if (player.isInRageMode()) {
+            g2.setColor(new Color(140, 16, 10, 34));
+            g2.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+        }
+
         // 5. Interface de Usuário (HUD)
-        hud.render(g2, player, boss, SCREEN_WIDTH, SCREEN_HEIGHT);
+        hud.render(g2, player, boss, stageNumber, isNearChest(), SCREEN_WIDTH, SCREEN_HEIGHT);
 
         // 6. Overlays de Menu, Pause, Game Over e Vitória
-        menuOverlay.render(g2, state, SCREEN_WIDTH, SCREEN_HEIGHT, player.getComboTracker().getMaxComboAchieved());
+        menuOverlay.render(g2, state, SCREEN_WIDTH, SCREEN_HEIGHT,
+            player.getComboTracker().getMaxComboAchieved(), stageNumber);
 
         g2.dispose();
     }

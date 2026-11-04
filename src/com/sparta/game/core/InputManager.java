@@ -23,8 +23,12 @@ public class InputManager implements KeyListener {
     public boolean dodge;
     public boolean block;
     public boolean rage;
+    public boolean interact;
     public boolean restart;
     public boolean pause;
+    public boolean upgradeHealth;
+    public boolean upgradeDamage;
+    public boolean upgradeRage;
 
     public void update() {
         left = isDown(KeyEvent.VK_A) || isDown(KeyEvent.VK_LEFT);
@@ -34,9 +38,13 @@ public class InputManager implements KeyListener {
         heavyAttack = wasJustPressed(KeyEvent.VK_K) || wasJustPressed(KeyEvent.VK_X);
         dodge = wasJustPressed(KeyEvent.VK_L) || wasJustPressed(KeyEvent.VK_C);
         block = isDown(KeyEvent.VK_U) || isDown(KeyEvent.VK_SHIFT);
-        rage = wasJustPressed(KeyEvent.VK_I) || wasJustPressed(KeyEvent.VK_E);
+        rage = wasJustPressed(KeyEvent.VK_I);
+        interact = wasJustPressed(KeyEvent.VK_E);
         restart = wasJustPressed(KeyEvent.VK_R) || wasJustPressed(KeyEvent.VK_ENTER);
         pause = wasJustPressed(KeyEvent.VK_P) || wasJustPressed(KeyEvent.VK_ESCAPE);
+        upgradeHealth = wasJustPressed(KeyEvent.VK_1);
+        upgradeDamage = wasJustPressed(KeyEvent.VK_2);
+        upgradeRage = wasJustPressed(KeyEvent.VK_3);
 
         // Limpa o buffer de pulso único
         for (int i = 0; i < justPressed.length; i++) {

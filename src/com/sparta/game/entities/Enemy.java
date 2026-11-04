@@ -78,5 +78,9 @@ public abstract class Enemy extends Entity {
     public boolean isAttacking() {
         return attacking;
     }
+
+    public int getExperienceReward() {
+        return 35;
+    }
 }
 

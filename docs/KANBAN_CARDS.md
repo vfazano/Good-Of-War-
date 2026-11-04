@@ -1,6 +1,6 @@
 # 📊 Quadro Kanban & Cards de Tarefas (Padrão Ágil / SENAI)
 
-Este documento documenta o fluxo de trabalho ágil (Kanban / Scrum) aplicado ao desenvolvimento de **God of War: Sons of Sparta**, detalhando colunas, cards no formato de **User Stories** com critérios de aceitação BDD (Gherkin), priorização **MoSCoW** e estimativa em **Story Points** (Sequência de Fibonacci).
+Este documento documenta o fluxo de trabalho ágil (Kanban / Scrum) aplicado ao desenvolvimento de **Good of War**, detalhando colunas, cards no formato de **User Stories** com critérios de aceitação BDD (Gherkin), priorização **MoSCoW** e estimativa em **Story Points** (Sequência de Fibonacci).
 
 ---
 

@@ -8,7 +8,7 @@ import javax.swing.SwingUtilities;
 
 /**
  * ============================================================================
- * PONTO DE ENTRADA PRINCIPAL — GOD OF WAR: SONS OF SPARTA
+ * PONTO DE ENTRADA PRINCIPAL — GOOD OF WAR
  * ============================================================================
  * Projeto Acadêmico SENAI
  * Disciplina: Programação Orientada a Objetos / Jogos Digitais
@@ -21,7 +21,7 @@ public class Main {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                JFrame window = new JFrame("God of War: Sons of Sparta — SENAI POO 2D");
+                JFrame window = new JFrame("Good of War — SENAI POO 2D");
                 GamePanel gamePanel = new GamePanel();
 
                 window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

@@ -28,12 +28,16 @@ public class HUD {
         this.comboFont = new Font("Impact", Font.ITALIC, 26);
     }
 
-    public void render(Graphics2D g, Player player, SpartanBoss boss, int screenWidth, int screenHeight) {
+    public void render(Graphics2D g, Player player, SpartanBoss boss, int stageNumber,
+                       boolean chestNearby, int screenWidth, int screenHeight) {
         // 1. Barra de Vida de Kratos
         renderPlayerHealthBar(g, player);
 
         // 2. Medidor de Fúria Espartana (Spartan Rage)
         renderRageMeter(g, player);
+
+        renderProgress(g, player);
+        renderStageLabel(g, stageNumber, screenWidth);
 
         // 3. Mostrador de Combos estilizado
         renderComboDisplay(g, player.getComboTracker());
@@ -45,6 +49,36 @@ public class HUD {
 
         // 5. Guia sutil de controles no rodapé
         renderControlsHelp(g, screenWidth, screenHeight);
+        if (chestNearby) {
+            g.setFont(textFont);
+            g.setColor(new Color(255, 220, 120));
+            String prompt = "[E] ABRIR BAU";
+            g.drawString(prompt, (screenWidth - g.getFontMetrics().stringWidth(prompt)) / 2, screenHeight - 38);
+        }
+    }
+
+    private void renderProgress(Graphics2D g, Player player) {
+        int x = 24;
+        int y = 64;
+        int barW = 180;
+        g.setColor(new Color(30, 20, 20, 210));
+        g.fillRect(x, y, barW, 7);
+        g.setColor(new Color(85, 140, 205));
+        double progress = (double) player.getExperience() / player.getExperienceToNextLevel();
+        g.fillRect(x, y, (int) (barW * progress), 7);
+        g.setFont(textFont);
+        g.setColor(Color.WHITE);
+        g.drawString("NIVEL " + player.getLevel() + "   XP " + player.getExperience()
+                + " / " + player.getExperienceToNextLevel(), x, y + 20);
+    }
+
+    private void renderStageLabel(Graphics2D g, int stageNumber, int screenWidth) {
+        String[] names = {"", "TEMPLO DE ESPARTA", "ARENA DE ARES", "PORTOES DE ARES"};
+        String label = stageNumber >= 1 && stageNumber < names.length ? names[stageNumber] : "ARENA";
+        g.setFont(greekTitleFont);
+        g.setColor(new Color(235, 205, 143));
+        int textWidth = g.getFontMetrics().stringWidth(label);
+        g.drawString(label, screenWidth - textWidth - 24, 24);
     }
 
     private void renderPlayerHealthBar(Graphics2D g, Player player) {
@@ -88,7 +122,9 @@ public class HUD {
         g.drawRect(x - 2, y - 2, barW + 4, barH + 4);
 
         // Preenchimento de Fúria
-        double ragePct = (double) player.getRage() / player.getMaxRage();
+        double ragePct = player.isInRageMode()
+            ? (double) player.getRageTimer() / player.getRageDuration()
+            : (double) player.getRage() / player.getMaxRage();
         Color rageColor = player.isInRageMode() ? new Color(255, 30, 10) : new Color(255, 140, 0);
         g.setColor(rageColor);
         g.fillRect(x, y, (int) (barW * ragePct), barH);
@@ -101,7 +137,7 @@ public class HUD {
         } else if (player.isInRageMode()) {
             g.setFont(textFont);
             g.setColor(new Color(255, 50, 20));
-            g.drawString("🔥 MODO FÚRIA ATIVO! 🔥", x + barW + 12, y + 10);
+            g.drawString("FURIA ATIVA: " + ((player.getRageTimer() + 59) / 60) + "s", x + barW + 12, y + 10);
         }
     }
 
@@ -147,7 +183,9 @@ public class HUD {
         // Título do Chefe
         g.setFont(greekTitleFont);
         g.setColor(new Color(255, 215, 100));
-        String title = boss.isEnraged() ? "⚡ ARAUTO DE ARES — GENERAL ENFURECIDO ⚡" : "ARAUTO DE ARES — GENERAL DE ESPARTA";
+        String title = boss.getPhase() == 3 ? "ARAUTO DE ARES — IRA DE ARES"
+            : boss.getPhase() == 2 ? "ARAUTO DE ARES — GENERAL FURIOSO"
+            : "ARAUTO DE ARES — GENERAL DE ESPARTA";
         int strW = g.getFontMetrics().stringWidth(title);
         g.drawString(title, (screenWidth - strW) / 2, y - 4);
 
@@ -169,7 +207,7 @@ public class HUD {
     private void renderControlsHelp(Graphics2D g, int screenWidth, int screenHeight) {
         g.setFont(new Font("Arial", Font.PLAIN, 11));
         g.setColor(new Color(230, 230, 230, 170));
-        String help = "[A/D] Andar | [W/Espaço] Pular | [J] Ataque Leve | [K] Cyclone of Chaos | [L] Esquiva | [U] Bloquear | [E] Fúria | [P] Pause";
+        String help = "[A/D] Mover | [W] Pular | [J] Golpe | [K] Ciclone | [L] Esquiva | [U] Bloquear | [I] Furia | [E] Bau | [P] Pausa";
         int textW = g.getFontMetrics().stringWidth(help);
         g.drawString(help, screenWidth - textW - 16, screenHeight - 14);
     }

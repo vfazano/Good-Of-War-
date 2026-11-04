@@ -17,19 +17,24 @@ import java.awt.Graphics2D;
  * PILARES DA POO: HERANÇA, POLIMORFISMO & ENCAPSULAMENTO
  * ============================================================================
  * Chefe de Fase: O General de Esparta (Arauto de Ares).
- * Herda de Enemy e implementa duas fases de combate (Normal e Enraged),
+ * Herda de Enemy e implementa tres fases de combate,
  * ataque de espada colossal e ondas de choque telúricas no solo.
  */
 public class SpartanBoss extends Enemy {
 
-    private boolean enraged;
+    private int phase;
     private int phaseTransitionTimer;
     private int groundSlamCooldown;
 
     public SpartanBoss(double x, double y) {
         super(x, y, 64, 96, 350, 480, 85, 2.2);
-        this.enraged = false;
+        this.phase = 1;
         this.groundSlamCooldown = 180;
+    }
+
+    @Override
+    public int getExperienceReward() {
+        return 200;
     }
 
     /**
@@ -43,25 +48,32 @@ public class SpartanBoss extends Enemy {
         double dist = Math.abs((x + width / 2.0) - (target.getX() + target.getWidth() / 2.0));
         facingRight = (target.getX() > x);
 
-        // Transição para a Fase 2 (Fúria aos 50% de vida)
-        if (!enraged && health <= maxHealth * 0.5) {
-            enraged = true;
-            moveSpeed = 3.4; // Acelera o chefe
-            context.getCamera().triggerShake(10.0, 30);
-            context.getSoundManager().playRageSound();
-            context.addParticle(new FloatingText(x + width / 2.0, y - 30, "WAR LORD ENRAGED!", new Color(255, 30, 20), 22));
+        if (phaseTransitionTimer <= 0) {
+            if (phase == 1 && health <= maxHealth * 0.70) {
+                enterPhase(2, context);
+            } else if (phase == 2 && health <= maxHealth * 0.35) {
+                enterPhase(3, context);
+            }
         }
 
-        // Se estiver em modo Enraged, emite labaredas espartanas
-        if (enraged) {
+        if (phaseTransitionTimer > 0) {
+            phaseTransitionTimer--;
+            if (phase >= 2) {
+                context.addParticle(new FireParticle(x + Math.random() * width, y + Math.random() * height,
+                        (Math.random() - 0.5) * 3, -Math.random() * 4, 24, 8f));
+            }
+            return;
+        }
+
+        if (phase >= 2) {
             context.addParticle(new FireParticle(x + Math.random() * width, y + Math.random() * height,
-                    (Math.random() - 0.5) * 2, -Math.random() * 3, 20, 6f));
+                    (Math.random() - 0.5) * (phase == 3 ? 3 : 2), -Math.random() * 4, 22, phase == 3 ? 8f : 6f));
         }
 
         if (groundSlamCooldown > 0) groundSlamCooldown--;
 
         // Ataque Especial: Impacto Telúrico de Choque (Fase 2 ou aleatório)
-        if (enraged && groundSlamCooldown <= 0 && dist < 260) {
+        if (phase >= 2 && groundSlamCooldown <= 0 && dist < (phase == 3 ? 380 : 260)) {
             executeGroundSlam(context);
             return;
         }
@@ -76,14 +88,27 @@ public class SpartanBoss extends Enemy {
         }
     }
 
+    private void enterPhase(int nextPhase, GameContext context) {
+        phase = nextPhase;
+        phaseTransitionTimer = 72;
+        moveSpeed = phase == 2 ? 2.9 : 3.7;
+        groundSlamCooldown = phase == 2 ? 150 : 95;
+        context.getCamera().triggerShake(phase == 3 ? 13.0 : 10.0, 32);
+        context.getSoundManager().playRageSound();
+        String title = phase == 2 ? "FASE II: GENERAL FURIOSO" : "FASE III: IRA DE ARES";
+        context.addParticle(new FloatingText(x + width / 2.0, y - 30, title,
+                phase == 3 ? new Color(255, 90, 20) : new Color(255, 30, 20), 26));
+    }
+
     private void executeImperialSlash(GameContext context) {
         attacking = true;
-        attackTimer = 26;
-        attackCooldown = enraged ? 55 : 85;
+        attackTimer = phase == 3 ? 20 : 26;
+        attackCooldown = phase == 3 ? 42 : phase == 2 ? 60 : 85;
 
         int hitWidth = 95;
         int hitX = facingRight ? (int) (x + width) : (int) (x - hitWidth);
-        DamageInfo info = new DamageInfo(AttackType.BOSS_SLASH.getBaseDamage(), AttackType.BOSS_SLASH,
+        int damage = (int) (AttackType.BOSS_SLASH.getBaseDamage() * (phase == 3 ? 1.45 : phase == 2 ? 1.2 : 1.0));
+        DamageInfo info = new DamageInfo(damage, AttackType.BOSS_SLASH,
                 (facingRight ? 1 : -1) * 7.0, -3.5, false, false);
 
         Hitbox hitbox = new Hitbox(hitX, (int) (y + 15), hitWidth, 55, info, 14);
@@ -96,13 +121,14 @@ public class SpartanBoss extends Enemy {
     private void executeGroundSlam(GameContext context) {
         attacking = true;
         attackTimer = 35;
-        groundSlamCooldown = 220;
+        groundSlamCooldown = phase == 3 ? 150 : 210;
 
         // Onda de choque horizontal no solo em ambas as direções
-        DamageInfo shockwave = new DamageInfo(AttackType.BOSS_SHOCKWAVE.getBaseDamage(), AttackType.BOSS_SHOCKWAVE,
+        int damage = (int) (AttackType.BOSS_SHOCKWAVE.getBaseDamage() * (phase == 3 ? 1.4 : 1.0));
+        DamageInfo shockwave = new DamageInfo(damage, AttackType.BOSS_SHOCKWAVE,
                 0, -8.0, true, false);
 
-        int shockWidth = 260;
+        int shockWidth = phase == 3 ? 360 : 260;
         Hitbox hitbox = new Hitbox((int) (x + width / 2.0 - shockWidth / 2.0), (int) (y + height - 30),
                 shockWidth, 35, shockwave, 18);
         context.addHitbox(hitbox);
@@ -111,8 +137,9 @@ public class SpartanBoss extends Enemy {
         context.getCamera().triggerShake(9.0, 22);
 
         // Partículas da onda de choque no solo
-        for (int i = 0; i < 22; i++) {
-            double angle = (Math.PI / 22) * i;
+        int particleCount = phase == 3 ? 34 : 22;
+        for (int i = 0; i < particleCount; i++) {
+            double angle = (Math.PI / particleCount) * i;
             double pvx = (Math.random() - 0.5) * 8;
             context.addParticle(new FireParticle(x + width / 2.0, y + height - 10, pvx, -Math.random() * 4, 30, 8f));
         }
@@ -128,9 +155,10 @@ public class SpartanBoss extends Enemy {
         int dir = facingRight ? 1 : -1;
 
         // Aura vermelha na Fase 2
-        if (enraged) {
-            g2.setColor(new Color(255, 30, 10, 90));
-            g2.fillOval(cx - 38, cy - 10, 76, height + 16);
+        if (phase >= 2) {
+            int auraPadding = phase == 3 ? 52 : 38;
+            g2.setColor(phase == 3 ? new Color(255, 35, 5, 120) : new Color(255, 30, 10, 90));
+            g2.fillOval(cx - auraPadding, cy - 10, auraPadding * 2, height + 20);
         }
 
         // 1. Pernas com Grevas Ornamentadas de Ouro
@@ -165,7 +193,7 @@ public class SpartanBoss extends Enemy {
         g2.fillRect(cx - 12, cy - 12, 24, 4);
 
         // Olhos brilhando ferozes
-        g2.setColor(enraged ? new Color(255, 230, 0) : new Color(255, 50, 50));
+        g2.setColor(phase == 3 ? new Color(255, 255, 90) : new Color(255, 50, 50));
         g2.fillRect(cx + (dir > 0 ? 3 : -8), cy + 14, 5, 4);
 
         // 5. Espada Imperial Espartana (Xiphos Gigante)
@@ -185,7 +213,11 @@ public class SpartanBoss extends Enemy {
     }
 
     public boolean isEnraged() {
-        return enraged;
+        return phase >= 2;
+    }
+
+    public int getPhase() {
+        return phase;
     }
 }
 

@@ -7,6 +7,8 @@ public enum GameState {
     MENU,
     PLAYING,
     PAUSED,
+    LEVEL_UP,
+    STAGE_CLEAR,
     GAME_OVER,
     VICTORY
 }

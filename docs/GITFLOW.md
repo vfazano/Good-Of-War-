@@ -1,6 +1,6 @@
-# 🔱 Fluxo de Trabalho Gitflow — God of War: Sons of Sparta
+# 🔱 Fluxo de Trabalho Gitflow — Good of War
 
-Este documento descreve a metodologia e a política de versionamento **Gitflow** adotada no desenvolvimento do projeto acadêmico do SENAI **God of War: Sons of Sparta**.
+Este documento descreve a metodologia e a política de versionamento **Gitflow** adotada no desenvolvimento do projeto acadêmico do SENAI **Good of War**.
 
 ---
 

@@ -65,5 +65,12 @@ public class Camera {
     public double getX() {
         return x;
     }
+
+    public void reset() {
+        x = 0;
+        y = 0;
+        shakeIntensity = 0;
+        shakeDuration = 0;
+    }
 }
 

@@ -1,5 +1,5 @@
 # 🏛️ Os 4 Pilares da Programação Orientada a Objetos (POO)
-## Aplicação Prática no Jogo: *God of War: Sons of Sparta*
+## Aplicação Prática no Jogo: *Good of War*
 
 Este documento serve como memorial descritivo e defesa técnica dos quatro pilares fundamentais da **Programação Orientada a Objetos (POO)** aplicados no código-fonte do jogo para a avaliação do **SENAI**.
 

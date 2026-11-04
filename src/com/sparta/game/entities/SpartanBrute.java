@@ -29,6 +29,11 @@ public class SpartanBrute extends Enemy {
         this.smashChargeTimer = 0;
     }
 
+    @Override
+    public int getExperienceReward() {
+        return 65;
+    }
+
     /**
      * ========================================================================
      * PILAR DA POO: POLIMORFISMO (@Override)

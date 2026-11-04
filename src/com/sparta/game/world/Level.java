@@ -17,51 +17,97 @@ public class Level {
 
     private final int width;
     private final int height;
+    private final int stageNumber;
     private final List<Platform> platforms;
     private final List<Torch> torches;
+    private final List<Chest> chests;
 
     public Level(int width, int height) {
-        this.width = width;
-        this.height = height;
-        this.platforms = new ArrayList<Platform>();
-        this.torches = new ArrayList<Torch>();
-
-        buildSpartanArena();
+        this(width, height, 1);
     }
 
-    private void buildSpartanArena() {
+    public Level(int width, int height, int stageNumber) {
+        this.width = width;
+        this.height = height;
+        this.stageNumber = stageNumber;
+        this.platforms = new ArrayList<Platform>();
+        this.torches = new ArrayList<Torch>();
+        this.chests = new ArrayList<Chest>();
+
+        buildStage();
+    }
+
+    private void buildStage() {
         // Chão principal contínuo
         platforms.add(new Platform(0, 520, width, 180, true));
 
-        // Pilares e plataformas elevadas (estilo arquitetura espartana)
-        platforms.add(new Platform(260, 410, 220, 24, false));
-        platforms.add(new Platform(600, 330, 260, 24, false));
-        platforms.add(new Platform(1020, 420, 240, 24, false));
-        platforms.add(new Platform(1380, 320, 280, 24, false));
-        platforms.add(new Platform(1780, 410, 220, 24, false));
-
-        // Brazeiros / Tochas distribuídas
-        torches.add(new Torch(120, 520));
-        torches.add(new Torch(370, 410));
-        torches.add(new Torch(730, 330));
-        torches.add(new Torch(1140, 420));
-        torches.add(new Torch(1520, 320));
-        torches.add(new Torch(1890, 410));
-        torches.add(new Torch(2200, 520));
+        if (stageNumber == 1) {
+            platforms.add(new Platform(260, 410, 220, 24, false));
+            platforms.add(new Platform(600, 330, 260, 24, false));
+            platforms.add(new Platform(1020, 420, 240, 24, false));
+            platforms.add(new Platform(1380, 320, 280, 24, false));
+            platforms.add(new Platform(1780, 410, 220, 24, false));
+            torches.add(new Torch(120, 520));
+            torches.add(new Torch(370, 410));
+            torches.add(new Torch(730, 330));
+            torches.add(new Torch(1140, 420));
+            torches.add(new Torch(1520, 320));
+            torches.add(new Torch(1890, 410));
+            chests.add(new Chest(820, 486, Chest.Reward.HEALTH));
+        } else if (stageNumber == 2) {
+            platforms.add(new Platform(200, 425, 190, 24, false));
+            platforms.add(new Platform(500, 350, 230, 24, false));
+            platforms.add(new Platform(850, 285, 200, 24, false));
+            platforms.add(new Platform(1140, 405, 250, 24, false));
+            platforms.add(new Platform(1510, 325, 210, 24, false));
+            platforms.add(new Platform(1830, 430, 180, 24, false));
+            torches.add(new Torch(100, 520));
+            torches.add(new Torch(600, 350));
+            torches.add(new Torch(950, 285));
+            torches.add(new Torch(1260, 405));
+            torches.add(new Torch(1620, 325));
+            torches.add(new Torch(1980, 520));
+            chests.add(new Chest(710, 486, Chest.Reward.RAGE));
+            chests.add(new Chest(1560, 291, Chest.Reward.BLADE_UPGRADE));
+        } else {
+            platforms.add(new Platform(230, 400, 180, 24, false));
+            platforms.add(new Platform(520, 325, 210, 24, false));
+            platforms.add(new Platform(850, 410, 190, 24, false));
+            platforms.add(new Platform(1130, 345, 230, 24, false));
+            platforms.add(new Platform(1470, 285, 220, 24, false));
+            platforms.add(new Platform(1790, 390, 220, 24, false));
+            platforms.add(new Platform(2110, 330, 180, 24, false));
+            torches.add(new Torch(100, 520));
+            torches.add(new Torch(320, 400));
+            torches.add(new Torch(620, 325));
+            torches.add(new Torch(950, 410));
+            torches.add(new Torch(1240, 345));
+            torches.add(new Torch(1570, 285));
+            torches.add(new Torch(1900, 390));
+            torches.add(new Torch(2220, 330));
+            chests.add(new Chest(650, 486, Chest.Reward.HEALTH));
+            chests.add(new Chest(1690, 486, Chest.Reward.BLADE_UPGRADE));
+        }
     }
 
     public void update() {
         for (Torch t : torches) {
             t.update();
         }
+        for (Chest chest : chests) {
+            chest.update();
+        }
     }
 
     public void render(Graphics2D g, int cameraX) {
         // 1. Céu tempestuoso do Monte Olimpo (Gradiente vermelho e roxo sombrio de guerra)
-        GradientPaint skyGrad = new GradientPaint(
-            0, 0, new Color(40, 15, 25),
-            0, height, new Color(110, 30, 30)
-        );
+        Color skyTop = stageNumber == 2 ? new Color(18, 30, 43) : new Color(40, 15, 25);
+        Color skyBottom = stageNumber == 2 ? new Color(58, 76, 80) : new Color(110, 30, 30);
+        if (stageNumber >= 3) {
+            skyTop = new Color(32, 12, 14);
+            skyBottom = new Color(150, 43, 24);
+        }
+        GradientPaint skyGrad = new GradientPaint(0, 0, skyTop, 0, height, skyBottom);
         g.setPaint(skyGrad);
         g.fillRect(cameraX, 0, 1280, height);
 
@@ -87,6 +133,10 @@ public class Level {
         // 5. Renderizar plataformas
         for (Platform p : platforms) {
             p.render(g);
+        }
+
+        for (Chest chest : chests) {
+            chest.render(g);
         }
 
         // 6. Renderizar tochas acesas
@@ -122,6 +172,14 @@ public class Level {
 
     public List<Platform> getPlatforms() {
         return platforms;
+    }
+
+    public List<Chest> getChests() {
+        return chests;
+    }
+
+    public int getStageNumber() {
+        return stageNumber;
     }
 
     public int getWidth() {

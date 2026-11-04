@@ -23,6 +23,11 @@ public class SpartanLegionnaire extends Enemy {
         super(x, y, 38, 64, 45, 340, 55, 2.8);
     }
 
+    @Override
+    public int getExperienceReward() {
+        return 35;
+    }
+
     /**
      * ========================================================================
      * POLIMORFISMO: Implementação da IA específica do Legionário

@@ -1,4 +1,4 @@
-# 📋 Catálogo e Padrão de Issues — God of War: Sons of Sparta
+# 📋 Catálogo e Padrão de Issues — Good of War
 
 Este documento apresenta o padrão de abertura de **Issues** (tarefas/problemas no GitHub/GitLab/Jira) e a listagem real das issues criadas para a entrega do projeto no SENAI.
 

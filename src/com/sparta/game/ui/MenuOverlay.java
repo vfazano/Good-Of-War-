@@ -32,13 +32,19 @@ public class MenuOverlay {
         animTimer += 0.05;
     }
 
-    public void render(Graphics2D g, GameState state, int screenWidth, int screenHeight, int maxCombo) {
+    public void render(Graphics2D g, GameState state, int screenWidth, int screenHeight, int maxCombo, int stageNumber) {
         switch (state) {
             case MENU:
                 renderStartMenu(g, screenWidth, screenHeight);
                 break;
             case PAUSED:
                 renderPauseMenu(g, screenWidth, screenHeight);
+                break;
+            case LEVEL_UP:
+                renderLevelUp(g, screenWidth, screenHeight);
+                break;
+            case STAGE_CLEAR:
+                renderStageClear(g, screenWidth, screenHeight, stageNumber);
                 break;
             case GAME_OVER:
                 renderGameOver(g, screenWidth, screenHeight);
@@ -71,7 +77,7 @@ public class MenuOverlay {
         // Título Principal
         g.setFont(titleFont);
         g.setColor(new Color(240, 50, 30));
-        String title = "GOD OF WAR: SONS OF SPARTA";
+        String title = "GOOD OF WAR";
         int tw = g.getFontMetrics().stringWidth(title);
         g.drawString(title, (width - tw) / 2, by + 65);
 
@@ -92,13 +98,13 @@ public class MenuOverlay {
         // Painel de Controles
         int panelY = by + 170;
         g.setColor(new Color(45, 35, 38));
-        g.fillRect(bx + 40, panelY, boxW - 80, 180);
+        g.fillRect(bx + 40, panelY, boxW - 80, 204);
         g.setColor(new Color(160, 120, 40));
-        g.drawRect(bx + 40, panelY, boxW - 80, 180);
+        g.drawRect(bx + 40, panelY, boxW - 80, 204);
 
         g.setFont(new Font("Georgia", Font.BOLD, 15));
         g.setColor(new Color(255, 215, 100));
-        g.drawString("⚔️ COMANDOS DE BATALHA DE KRATOS:", bx + 60, panelY + 30);
+        g.drawString("COMANDOS DE BATALHA DE KRATOS:", bx + 60, panelY + 30);
 
         g.setFont(detailFont);
         g.setColor(Color.WHITE);
@@ -106,7 +112,8 @@ public class MenuOverlay {
         g.drawString("• W / Espaço: Salto Atlético com Gravidade", bx + 60, panelY + 82);
         g.drawString("• J ou Z: Ataque Leve com as Lâminas do Caos (Combo de 3 Golpes)", bx + 60, panelY + 106);
         g.drawString("• K ou X: Cyclone of Chaos (Ataque Pesado em Área 360°)", bx + 60, panelY + 130);
-        g.drawString("• L ou C: Esquiva Espartana (Invulnerabilidade) | U ou Shift: Bloqueio com Escudo", bx + 60, panelY + 154);
+        g.drawString("• L ou C: Esquiva | U ou Shift: Bloqueio | I: Fúria | E: Abrir baú", bx + 60, panelY + 154);
+        g.drawString("• Derrote inimigos para ganhar XP | 1 / 2 / 3: escolher melhoria ao subir de nível", bx + 60, panelY + 180);
 
         // Botão pulsar para iniciar
         float pulse = (float) ((Math.sin(animTimer * 2) + 1.0) / 2.0);
@@ -116,6 +123,56 @@ public class MenuOverlay {
         String startText = "▶ PRESSIONE [ENTER] OU [ESPAÇO] PARA COMEÇAR ◀";
         int stw = g.getFontMetrics().stringWidth(startText);
         g.drawString(startText, (width - stw) / 2, by + boxH - 35);
+    }
+
+    private void renderLevelUp(Graphics2D g, int width, int height) {
+        g.setColor(new Color(12, 9, 10, 235));
+        g.fillRect(0, 0, width, height);
+        g.setFont(titleFont);
+        g.setColor(new Color(255, 211, 92));
+        String title = "NOVO NIVEL";
+        g.drawString(title, (width - g.getFontMetrics().stringWidth(title)) / 2, 150);
+
+        g.setFont(detailFont);
+        g.setColor(new Color(225, 215, 198));
+        String prompt = "Escolha uma melhoria permanente";
+        g.drawString(prompt, (width - g.getFontMetrics().stringWidth(prompt)) / 2, 185);
+
+        String[] upgrades = {"[1] VITALIDADE", "+20 vida maxima e recupera 30 HP",
+                             "[2] LAMINAS", "+3 de dano em todos os golpes",
+                             "[3] FURIA", "+2 segundos no modo Furia"};
+        int cardWidth = 250;
+        int cardHeight = 116;
+        int gap = 18;
+        int startX = (width - (cardWidth * 3 + gap * 2)) / 2;
+        for (int i = 0; i < 3; i++) {
+            int x = startX + i * (cardWidth + gap);
+            g.setColor(new Color(39, 29, 24));
+            g.fillRect(x, 220, cardWidth, cardHeight);
+            g.setColor(new Color(190, 140, 50));
+            g.drawRect(x, 220, cardWidth, cardHeight);
+            g.setFont(subtitleFont);
+            g.setColor(new Color(255, 211, 92));
+            String label = upgrades[i * 2];
+            g.drawString(label, x + (cardWidth - g.getFontMetrics().stringWidth(label)) / 2, 260);
+            g.setFont(detailFont);
+            g.setColor(Color.WHITE);
+            String detail = upgrades[i * 2 + 1];
+            g.drawString(detail, x + (cardWidth - g.getFontMetrics().stringWidth(detail)) / 2, 294);
+        }
+    }
+
+    private void renderStageClear(Graphics2D g, int width, int height, int stageNumber) {
+        g.setColor(new Color(12, 9, 10, 235));
+        g.fillRect(0, 0, width, height);
+        g.setFont(titleFont);
+        g.setColor(new Color(255, 211, 92));
+        String title = "AREA CONQUISTADA";
+        g.drawString(title, (width - g.getFontMetrics().stringWidth(title)) / 2, height / 2 - 60);
+        g.setFont(subtitleFont);
+        g.setColor(Color.WHITE);
+        String next = stageNumber < 3 ? "Pressione [ENTER] para seguir para a proxima arena" : "A batalha final espera por voce";
+        g.drawString(next, (width - g.getFontMetrics().stringWidth(next)) / 2, height / 2 + 8);
     }
 
     private void renderGameOver(Graphics2D g, int width, int height) {
