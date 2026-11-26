@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -171,11 +172,11 @@ public class Level {
     }
 
     public List<Platform> getPlatforms() {
-        return platforms;
+        return Collections.unmodifiableList(platforms);
     }
 
     public List<Chest> getChests() {
-        return chests;
+        return Collections.unmodifiableList(chests);
     }
 
     public int getStageNumber() {

@@ -185,7 +185,14 @@ public abstract class Entity implements Combatant {
     }
 
     public int getMaxHealth() { return maxHealth; }
-    public void setMaxHealth(int maxHealth) { this.maxHealth = maxHealth; }
+
+    public void setMaxHealth(int maxHealth) {
+        if (maxHealth <= 0) return;
+        this.maxHealth = maxHealth;
+        if (this.health > this.maxHealth) {
+            this.health = this.maxHealth;
+        }
+    }
 
     @Override
     public boolean isAlive() { return alive; }

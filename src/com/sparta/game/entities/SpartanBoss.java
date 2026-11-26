@@ -41,6 +41,27 @@ public class SpartanBoss extends Enemy {
      * ========================================================================
      * PILAR DA POO: POLIMORFISMO (@Override)
      * ========================================================================
+     * O Chefe possui postura de combate (poise) e resistência na Fase III.
+     */
+    @Override
+    public void takeDamage(DamageInfo info) {
+        if (!alive || invulnerableFrames > 0) return;
+
+        int damage = info.getAmount();
+        if (phase >= 3) {
+            damage = Math.max(1, (int) (damage * 0.85)); // Aura flamejante reduz 15% do dano na Fase III
+        }
+
+        setHealth(this.health - damage);
+        this.vx += info.getKnockbackX() * 0.2;
+        this.hitStunFrames = 3;
+        this.invulnerableFrames = 10;
+    }
+
+    /**
+     * ========================================================================
+     * PILAR DA POO: POLIMORFISMO (@Override)
+     * ========================================================================
      * IA do Chefe de Fase com transição de fases baseada no percentual de vida.
      */
     @Override

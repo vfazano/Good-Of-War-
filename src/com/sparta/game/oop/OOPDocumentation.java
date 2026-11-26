@@ -28,9 +28,12 @@ public final class OOPDocumentation {
     /**
      * 2. ENCAPSULAMENTO:
      * - Onde encontrar:
-     *   * Atributos 'private' e 'protected' em Entity, Player, Enemy, GamePanel.
+     *   * Atributos 'private' e 'protected' em Entity, Player, Enemy, InputManager, Level, GamePanel.
      *   * Getters e Setters com regras de negócio em Entity.java:
-     *     setHealth(int) trava a vida entre 0 e maxHealth e dispara onDeath() automaticamente.
+     *     setHealth(int) trava a vida entre 0 e maxHealth e dispara onDeath() automaticamente;
+     *     setMaxHealth(int) impede valores não positivos.
+     *   * InputManager expõe estados de teclado apenas por getters (isLeft(), isJump(), etc.).
+     *   * Level expõe plataformas e baús via Collections.unmodifiableList().
      *   * Value Object imutável DamageInfo: atributos 'final' e apenas leitura, impedindo
      *     adulteração dos valores de dano durante o tráfego do golpe.
      */
@@ -51,13 +54,12 @@ public final class OOPDocumentation {
     /**
      * 4. POLIMORFISMO:
      * - Onde encontrar:
-     *   * Coleção polimórfica List<Enemy> no GamePanel: o loop itera chamando enemy.updateEnemy()
-     *     e enemy.render(), e cada classe derivada (Legionário, Bruto, Boss) executa sua
-     *     própria IA e desenho em tempo de execução (dynamic dispatch).
-     *   * Sobrescrita (@Override) de takeDamage() no SpartanBrute: reduz 35% do dano devido à
-     *     sua armadura pesada e ignora recuo leve (hyper-armor), enquanto o Legionário sofre dano integral.
-     *   * Sobrescrita (@Override) de takeDamage() no Player: bloqueia com escudo caso o botão
-     *     de guarda esteja pressionado.
+     *   * Coleção polimórfica List<Enemy> no GamePanel: o loop itera chamando enemy.update(context),
+     *     e cada classe derivada (Legionário, Bruto, Boss) executa sua própria IA em tempo de execução.
+     *   * Lista polimórfica List<Entity> no paintComponent: enemies + player renderizados via entity.render(g2).
+     *   * Uso polimórfico da interface Combatant em GamePanel.tryApplyCombatHit(Hitbox, Combatant).
+     *   * Sobrescrita (@Override) de takeDamage() no SpartanBrute (reduz 35% do dano + hyper-armor),
+     *     no SpartanBoss (postura de chefe e -15% de dano na Fase III) e no Player (bloqueio com escudo).
      */
     public static final String POLIMORFISMO = "Sobrescrita de métodos e coleções genéricas com comportamento polimórfico.";
 }

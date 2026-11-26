@@ -15,20 +15,20 @@ public class InputManager implements KeyListener {
     private final boolean[] keys = new boolean[256];
     private final boolean[] justPressed = new boolean[256];
 
-    public boolean left;
-    public boolean right;
-    public boolean jump;
-    public boolean lightAttack;
-    public boolean heavyAttack;
-    public boolean dodge;
-    public boolean block;
-    public boolean rage;
-    public boolean interact;
-    public boolean restart;
-    public boolean pause;
-    public boolean upgradeHealth;
-    public boolean upgradeDamage;
-    public boolean upgradeRage;
+    private boolean left;
+    private boolean right;
+    private boolean jump;
+    private boolean lightAttack;
+    private boolean heavyAttack;
+    private boolean dodge;
+    private boolean block;
+    private boolean rage;
+    private boolean interact;
+    private boolean restart;
+    private boolean pause;
+    private boolean upgradeHealth;
+    private boolean upgradeDamage;
+    private boolean upgradeRage;
 
     public void update() {
         left = isDown(KeyEvent.VK_A) || isDown(KeyEvent.VK_LEFT);
@@ -89,5 +89,20 @@ public class InputManager implements KeyListener {
     public void keyTyped(KeyEvent e) {
         // Não utilizado para controle de gameplay em tempo real
     }
+
+    public boolean isLeft() { return left; }
+    public boolean isRight() { return right; }
+    public boolean isJump() { return jump; }
+    public boolean isLightAttack() { return lightAttack; }
+    public boolean isHeavyAttack() { return heavyAttack; }
+    public boolean isDodge() { return dodge; }
+    public boolean isBlock() { return block; }
+    public boolean isRage() { return rage; }
+    public boolean isInteract() { return interact; }
+    public boolean isRestart() { return restart; }
+    public boolean isPause() { return pause; }
+    public boolean isUpgradeHealth() { return upgradeHealth; }
+    public boolean isUpgradeDamage() { return upgradeDamage; }
+    public boolean isUpgradeRage() { return upgradeRage; }
 }
 

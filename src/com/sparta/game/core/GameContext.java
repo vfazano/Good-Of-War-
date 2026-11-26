@@ -2,6 +2,7 @@ package com.sparta.game.core;
 
 import com.sparta.game.combat.Hitbox;
 import com.sparta.game.effects.Particle;
+import com.sparta.game.entities.Player;
 import com.sparta.game.world.Level;
 
 import java.util.List;
@@ -21,15 +22,23 @@ public class GameContext {
     private final InputManager inputManager;
     private final List<Hitbox> hitboxes;
     private final List<Particle> particles;
+    private final Player player;
 
     public GameContext(Level level, Camera camera, SoundManager soundManager,
                        InputManager inputManager, List<Hitbox> hitboxes, List<Particle> particles) {
+        this(level, camera, soundManager, inputManager, hitboxes, particles, null);
+    }
+
+    public GameContext(Level level, Camera camera, SoundManager soundManager,
+                       InputManager inputManager, List<Hitbox> hitboxes, List<Particle> particles,
+                       Player player) {
         this.level = level;
         this.camera = camera;
         this.soundManager = soundManager;
         this.inputManager = inputManager;
         this.hitboxes = hitboxes;
         this.particles = particles;
+        this.player = player;
     }
 
     public Level getLevel() {
@@ -54,6 +63,10 @@ public class GameContext {
 
     public void addParticle(Particle particle) {
         particles.add(particle);
+    }
+
+    public Player getPlayer() {
+        return player;
     }
 }
 

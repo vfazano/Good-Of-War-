@@ -67,7 +67,9 @@ public abstract class Enemy extends Entity {
 
     @Override
     public void update(GameContext context) {
-        // Será chamado via polimorfismo passando o player através do GamePanel
+        if (context != null && context.getPlayer() != null) {
+            updateEnemy(context.getPlayer(), context);
+        }
     }
 
     @Override

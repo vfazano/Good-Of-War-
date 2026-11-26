@@ -5,7 +5,9 @@ import com.sparta.game.effects.BloodParticle;
 import com.sparta.game.effects.FloatingText;
 import com.sparta.game.effects.Particle;
 import com.sparta.game.effects.SparkParticle;
+import com.sparta.game.entities.Combatant;
 import com.sparta.game.entities.Enemy;
+import com.sparta.game.entities.Entity;
 import com.sparta.game.entities.Player;
 import com.sparta.game.entities.SpartanBoss;
 import com.sparta.game.entities.SpartanBrute;
@@ -123,16 +125,16 @@ public class GamePanel extends JPanel {
 
         // 1. Controle de telas / Estados de Jogo
         if (state == GameState.MENU) {
-            if (inputManager.restart || inputManager.jump || inputManager.lightAttack) {
+            if (inputManager.isRestart() || inputManager.isJump() || inputManager.isLightAttack()) {
                 state = GameState.PLAYING;
             }
             return;
         }
 
         if (state == GameState.LEVEL_UP) {
-            int choice = inputManager.upgradeHealth ? 1
-                    : inputManager.upgradeDamage ? 2
-                    : inputManager.upgradeRage ? 3 : 0;
+            int choice = inputManager.isUpgradeHealth() ? 1
+                    : inputManager.isUpgradeDamage() ? 2
+                    : inputManager.isUpgradeRage() ? 3 : 0;
             if (choice != 0) {
                 player.applyLevelUpgrade(choice);
                 if (player.getPendingLevelUps() == 0) {
@@ -143,7 +145,7 @@ public class GamePanel extends JPanel {
         }
 
         if (state == GameState.STAGE_CLEAR) {
-            if (inputManager.restart && stageNumber < FINAL_STAGE) {
+            if (inputManager.isRestart() && stageNumber < FINAL_STAGE) {
                 loadStage(stageNumber + 1);
                 state = GameState.PLAYING;
             }
@@ -151,14 +153,14 @@ public class GamePanel extends JPanel {
         }
 
         if (state == GameState.GAME_OVER || state == GameState.VICTORY) {
-            if (inputManager.restart) {
+            if (inputManager.isRestart()) {
                 resetGame();
                 state = GameState.PLAYING;
             }
             return;
         }
 
-        if (inputManager.pause) {
+        if (inputManager.isPause()) {
             state = (state == GameState.PLAYING) ? GameState.PAUSED : GameState.PLAYING;
             return;
         }
@@ -168,7 +170,7 @@ public class GamePanel extends JPanel {
         }
 
         // 2. Criação do contexto de execução
-        GameContext context = new GameContext(level, camera, soundManager, inputManager, hitboxes, particles);
+        GameContext context = new GameContext(level, camera, soundManager, inputManager, hitboxes, particles, player);
 
         // 3. Atualizar Level e Câmera com rastreio de Kratos
         level.update();
@@ -176,9 +178,9 @@ public class GamePanel extends JPanel {
         collectNearbyChest();
         camera.update(player.getX() + player.getWidth() / 2.0, player.getY(), SCREEN_WIDTH, level.getWidth());
 
-        // 4. POLIMORFISMO: Atualizar lista de inimigos heterogêneos
+        // 4. POLIMORFISMO: Atualizar lista de inimigos heterogêneos via contrato Entity.update()
         for (Enemy enemy : enemies) {
-            enemy.updateEnemy(player, context);
+            enemy.update(context);
         }
 
         // 5. Atualizar Hitboxes ativas
@@ -234,7 +236,7 @@ public class GamePanel extends JPanel {
     }
 
     private void collectNearbyChest() {
-        if (!inputManager.interact) return;
+        if (!inputManager.isInteract()) return;
         for (Chest chest : level.getChests()) {
             if (!chest.isNear((int) player.getX(), (int) player.getY(), player.getWidth(), player.getHeight())) continue;
             Chest.Reward reward = chest.open();
@@ -267,10 +269,8 @@ public class GamePanel extends JPanel {
             // Se o golpe veio de Kratos, atinge os inimigos
             if (h.getDamageInfo().isFromPlayer()) {
                 for (Enemy enemy : enemies) {
-                    if (enemy.isAlive() && h.intersects(enemy.getHitbox())) {
-                        boolean wasAlive = enemy.isAlive();
-                        enemy.takeDamage(h.getDamageInfo()); // Despacho Polimórfico!
-                        if (wasAlive && !enemy.isAlive()) {
+                    if (tryApplyCombatHit(h, enemy)) {
+                        if (!enemy.isAlive()) {
                             int xpReward = enemy.getExperienceReward();
                             player.awardExperience(xpReward);
                             particles.add(new FloatingText(enemy.getX(), enemy.getY() - 18,
@@ -294,7 +294,8 @@ public class GamePanel extends JPanel {
             }
             // Se o golpe veio de um inimigo, atinge Kratos
             else {
-                if (player.isAlive() && h.intersects(player.getHitbox())) {
+                Combatant playerTarget = player;
+                if (playerTarget.isAlive() && h.intersects(playerTarget.getHitbox())) {
                     if (player.isBlocking() && !h.getDamageInfo().canBreakBlock()) {
                         // Bloqueio bem-sucedido
                         soundManager.playBlockClangSound();
@@ -304,14 +305,25 @@ public class GamePanel extends JPanel {
                                     player.getY() + 30, (Math.random() - 0.5) * 6, -Math.random() * 5, 20));
                         }
                     } else {
-                        // Kratos recebe o golpe
-                        player.takeDamage(h.getDamageInfo());
+                        // Kratos recebe o golpe via interface Combatant
+                        tryApplyCombatHit(h, playerTarget);
                         soundManager.playHitSound();
                     }
                     h.deactivate();
                 }
             }
         }
+    }
+
+    /**
+     * Aplica um golpe usando apenas a abstração da interface Combatant (Polimorfismo).
+     */
+    private boolean tryApplyCombatHit(Hitbox hitbox, Combatant target) {
+        if (!target.isAlive() || !hitbox.intersects(target.getHitbox())) {
+            return false;
+        }
+        target.takeDamage(hitbox.getDamageInfo()); // Despacho Polimórfico!
+        return true;
     }
 
     @Override
@@ -332,13 +344,12 @@ public class GamePanel extends JPanel {
         // 1. Cenário do Templo de Esparta
         level.render(g2, camX);
 
-        // 2. POLIMORFISMO: Renderizar todos os inimigos
-        for (Enemy enemy : enemies) {
-            enemy.render(g2);
+        // 2. POLIMORFISMO: Renderizar todas as entidades (Inimigos + Kratos) via superclasse Entity
+        List<Entity> renderEntities = new ArrayList<Entity>(enemies);
+        renderEntities.add(player);
+        for (Entity entity : renderEntities) {
+            entity.render(g2);
         }
-
-        // 3. Renderizar Kratos (Fantasma de Esparta)
-        player.render(g2);
 
         // 4. POLIMORFISMO: Renderizar todas as partículas
         for (Particle p : particles) {

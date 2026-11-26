@@ -70,10 +70,12 @@ classDiagram
     }
 
     class SpartanBoss {
-        -BossPhase currentPhase
-        -int groundSlamTimer
+        -int phase
+        -int phaseTransitionTimer
+        -int groundSlamCooldown
         +updateAI(Player target, GameContext context) void
         +render(Graphics2D g) void
+        +takeDamage(DamageInfo info) void
     }
 
     Combatant <|.. Entity
@@ -124,9 +126,9 @@ Consiste em proteger o estado interno de um objeto contra modificações diretas
 
 **Onde está no projeto:**
 1. **Blindagem de Atributos:**
-   Em `Entity.java` e `Player.java`, os atributos como `health`, `maxHealth`, `x`, `y`, `rage`, `invulnerable` são estritamente `private` ou `protected`.
+   Em `Entity.java`, `Player.java`, `InputManager.java` e `Level.java`, os atributos internos são `private` ou `protected`. `InputManager` expõe o estado das teclas exclusivamente por getters (`isLeft()`, `isJump()`, etc.), e `Level` retorna `Collections.unmodifiableList(...)` para impedir alteração direta de plataformas e baús.
 2. **Regras de Negócio em Setters:**
-   Não é possível definir vida negativa ou acima do máximo; o método `setHealth(int value)` encapsula a trava de segurança:
+   Não é possível definir vida negativa ou acima do máximo; o método `setHealth(int value)` encapsula a trava de segurança (e `setMaxHealth(int)` bloqueia valores `<= 0`):
    ```java
    public void setHealth(int health) {
        this.health = Math.max(0, Math.min(health, this.maxHealth));
@@ -170,19 +172,24 @@ Capacidade de objetos de diferentes classes derivadas responderem à mesma mensa
 
 **Onde está no projeto:**
 1. **Coleções Genéricas e Loop Polimórfico no `GamePanel`:**
-   O motor de jogo não precisa saber se o inimigo é um soldado, um bruto ou o chefão. Ele apenas armazena uma lista polimórfica `List<Enemy> enemies` e itera sobre ela:
+   O motor de jogo não precisa saber se o inimigo é um soldado, um bruto ou o chefão. Ele armazena `List<Enemy> enemies` para atualização e `List<Entity>` para renderização:
    ```java
    for (Enemy enemy : enemies) {
-       enemy.update(context); // Chama a IA polimórfica correspondente!
+       enemy.update(context); // Chama updateEnemy -> updateAI() polimórfico!
    }
 
-   for (Enemy enemy : enemies) {
-       enemy.render(g2d);     // Desenha o sprite polimórfico correto!
+   List<Entity> renderEntities = new ArrayList<Entity>(enemies);
+   renderEntities.add(player);
+   for (Entity entity : renderEntities) {
+       entity.render(g2);     // Desenha Kratos ou o inimigo correspondente!
    }
    ```
-2. **Polimorfismo de Ataque e Dano (`takeDamage`):**
-   - Quando um `SpartanLegionnaire` recebe dano, ele sofre recuo (knockback) total e entra em stun.
-   - Quando o `SpartanBrute` recebe o mesmo golpe, ele **sobrescreve** `takeDamage` usando sua armadura espartana de bronze para reduzir o dano recebido em 35% e ignorar pequenos empurrões (`hyper-armor`).
+2. **Polimorfismo via Interface `Combatant` e `takeDamage`:**
+   - `GamePanel.tryApplyCombatHit(Hitbox hitbox, Combatant target)` trata Kratos e inimigos de forma uniforme pelo contrato `Combatant`.
+   - Quando um `SpartanLegionnaire` recebe dano, ele sofre recuo (knockback) total e entra em stun (`Entity.takeDamage`).
+   - Quando o `SpartanBrute` recebe o mesmo golpe, ele **sobrescreve** `takeDamage` usando sua armadura para reduzir o dano recebido em 35% e diminuir recuos (`hyper-armor`).
+   - O `SpartanBoss` também **sobrescreve** `takeDamage` para manter postura de chefe (`hitStunFrames = 3`) e reduzir 15% do dano na Fase III.
+   - O `Player` **sobrescreve** `takeDamage` para bloquear ataques com o escudo quando está em guarda.
 3. **Polimorfismo de Renderização (`render`):**
    - Kratos se renderiza com as Lâminas do Caos flamejantes, tatuagem vermelha e pele cinza de cinzas.
    - O Legionário se renderiza com elmo com pluma, túnica vermelha e lança espartana.
@@ -194,8 +201,8 @@ Capacidade de objetos de diferentes classes derivadas responderem à mesma mensa
 
 | Pilar | Pergunta que responde na banca | Onde mostrar no código |
 | :--- | :--- | :--- |
-| **Abstração** | *"Qual o modelo conceitual comum a todos os seres do jogo?"* | [`Entity.java`](file:///c:/Users/User/OneDrive/Área de Trabalho/Jogo Senai/src/com/sparta/game/entities/Entity.java) e [`Combatant.java`](file:///c:/Users/User/OneDrive/Área de Trabalho/Jogo Senai/src/com/sparta/game/entities/Combatant.java) |
-| **Encapsulamento**| *"Como garantimos que a vida, fúria e coordenadas não fiquem inconsistentes?"* | Getters/Setters com validação em `Entity.java` e `Player.java` |
-| **Herança** | *"Como evitamos duplicar lógica de física e colisão para cada criatura?"* | `Player extends Entity` e `Enemy extends Entity` |
-| **Polimorfismo** | *"Como o Game Loop gerencia dezenas de inimigos distintos com um único loop?"* | `@Override` de `updateAI()` e `render()` chamado via `List<Enemy>` |
+| **Abstração** | *"Qual o modelo conceitual comum a todos os seres do jogo?"* | `Entity.java`, `Enemy.java`, `Particle.java` e `Combatant.java` |
+| **Encapsulamento**| *"Como garantimos que a vida, fúria, entrada e listas não fiquem inconsistentes?"* | `Entity.java`, `Player.java`, `DamageInfo.java`, `InputManager.java` e `Level.java` |
+| **Herança** | *"Como evitamos duplicar lógica de física e colisão para cada criatura?"* | `Player extends Entity`, `Enemy extends Entity` e `Particle` |
+| **Polimorfismo** | *"Como o Game Loop gerencia entidades e danos distintos com o mesmo código?"* | `List<Enemy>`, `List<Entity>`, `Combatant` e `@Override` de `updateAI()`, `render()` e `takeDamage()` |
 

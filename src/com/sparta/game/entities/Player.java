@@ -95,7 +95,7 @@ public class Player extends Entity {
                 inRageMode = false;
                 rage = 0;
             }
-        } else if (input.rage && rage >= maxRage) {
+        } else if (input.isRage() && rage >= maxRage) {
             activateSpartanRage(context);
         }
 
@@ -107,7 +107,7 @@ public class Player extends Entity {
             if (dodgeTimer <= 0) {
                 dodging = false;
             }
-        } else if (input.dodge && onGround && attackTimer <= 0) {
+        } else if (input.isDodge() && onGround && attackTimer <= 0) {
             dodging = true;
             dodgeTimer = 18;
             invulnerableFrames = 18;
@@ -115,22 +115,22 @@ public class Player extends Entity {
         }
 
         // 3. Bloqueio / Postura de Escudo
-        blocking = input.block && onGround && attackTimer <= 0 && !dodging;
+        blocking = input.isBlock() && onGround && attackTimer <= 0 && !dodging;
 
         // 4. Movimentação Horizontal (se não estiver bloqueando ou atacando estático)
         if (!blocking && !dodging && attackState != 4) {
             double currentSpeed = inRageMode ? RAGE_WALK_SPEED : WALK_SPEED;
-            if (input.left) {
+            if (input.isLeft()) {
                 vx = -currentSpeed;
                 facingRight = false;
-            } else if (input.right) {
+            } else if (input.isRight()) {
                 vx = currentSpeed;
                 facingRight = true;
             }
         }
 
         // 5. Pulo
-        if (input.jump && onGround && !blocking && !dodging && attackTimer <= 0) {
+        if (input.isJump() && onGround && !blocking && !dodging && attackTimer <= 0) {
             vy = JUMP_FORCE;
             onGround = false;
             context.getSoundManager().playJumpSound();
@@ -161,11 +161,11 @@ public class Player extends Entity {
         if (dodging || blocking || attackCooldown > 0) return;
 
         // Ataque Leve com as Lâminas (Combo de 3 Golpes: J)
-        if (input.lightAttack && attackTimer <= 4) {
+        if (input.isLightAttack() && attackTimer <= 4) {
             executeLightAttack(context);
         }
         // Ataque Pesado em Área (Cyclone of Chaos: K)
-        else if (input.heavyAttack && attackTimer <= 0) {
+        else if (input.isHeavyAttack() && attackTimer <= 0) {
             executeCycloneOfChaos(context);
         }
     }
@@ -261,8 +261,9 @@ public class Player extends Entity {
     }
 
     public void restoreHealth(int amount) {
-        health = Math.min(maxHealth, health + Math.max(0, amount));
-        if (health > 0) alive = true;
+        if (amount <= 0) return;
+        if (!alive) alive = true;
+        setHealth(this.health + amount);
     }
 
     public void upgradeBladesFromChest() {
@@ -281,8 +282,8 @@ public class Player extends Entity {
     public void applyLevelUpgrade(int choice) {
         if (pendingLevelUps <= 0) return;
         if (choice == 1) {
-            maxHealth += 20;
-            health = Math.min(maxHealth, health + 30);
+            setMaxHealth(getMaxHealth() + 20);
+            setHealth(getHealth() + 30);
         } else if (choice == 2) {
             bladeDamageBonus += 3;
         } else if (choice == 3) {
